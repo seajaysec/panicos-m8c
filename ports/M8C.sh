@@ -26,6 +26,10 @@ export HOME="$GAMEDIR/data"
 export XDG_DATA_HOME="$HOME/.local/share"
 export LD_LIBRARY_PATH="$GAMEDIR/libs:$LD_LIBRARY_PATH"
 export SDL_GAMECONTROLLERCONFIG="$sdl_controllerconfig"
+# Launched from ES these are inherited; the fallbacks are PanicOS's session
+# values so a manual (SSH) launch can find the Wayland display too.
+export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/var/run/0-runtime-dir}"
+export WAYLAND_DISPLAY="${WAYLAND_DISPLAY:-wayland-1}"
 
 mkdir -p "$GAMEDIR/logs" "$XDG_DATA_HOME/m8c"
 
