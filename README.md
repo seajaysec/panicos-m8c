@@ -39,3 +39,12 @@ until the device appears (CDC-ACM serial, VID 16c0).
 - **Config**: `m8c/data/.local/share/m8c/config.ini` (m8c rewrites it with
   the full option set after first run; delete it to reseed defaults).
 - **Log**: `m8c/logs/m8c.log`.
+
+## m8c 2.x (this branch)
+
+`build-2x.sh` builds **m8c v2.2.3 + SDL3 3.4.12** (bundled — PanicOS has no
+SDL3) and stages a separate **M8C-Beta** port so stable v1.7.9 stays
+untouched. 2.x adds the in-app config UI, multichannel-USB product-id
+detection (newer M8 firmware audio modes), async command processing, and
+better disconnect recovery. Validated rendering + gamepad on the RG35XX Pro;
+not yet tested with an M8 attached.
