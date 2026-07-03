@@ -40,6 +40,52 @@ chmod +x "$GAMEDIR/m8c" 2>/dev/null
 # something asks for it. Idempotent.
 modprobe cdc-acm 2>/dev/null || true
 
+# PanicOS elects ANY USB audio sink as the system default the moment it
+# appears (USB-C DAC convenience rule, priority 2000 in
+# 95-panicos-routing.conf) — which silently reroutes ALL device audio out the
+# M8's headphone jack while it is plugged in, muting the speaker until it is
+# unplugged. The M8 is an instrument, not a DAC: pin its OUTPUT below the
+# built-in codec so the speaker stays default (m8c then plays the M8's audio
+# out the speaker; the M8 capture side is untouched). One-time drop-in; the
+# audio stack restarts only when it was just installed.
+_m8wp="/usr/share/wireplumber/wireplumber.conf.d/96-m8-not-default-sink.conf"
+if [ ! -f "$_m8wp" ] && [ -d "$(dirname "$_m8wp")" ]; then
+    cat > "$_m8wp" <<'M8WP'
+# The Dirtywave M8 is an instrument, not a USB-C DAC: its USB audio output
+# must never be elected the default sink (95-panicos-routing.conf bumps all
+# alsa_output.usb-* to 2000, which silently reroutes ALL system audio out
+# the M8 headphone jack the moment it is plugged in). Drop it below the
+# built-in codec (~1000) so the speaker stays default; m8c then plays the
+# M8 capture stream out the speaker. The M8 CAPTURE side is untouched.
+monitor.alsa.rules = [
+  {
+    matches = [
+      { node.name = "~alsa_output\\.usb-Dirtywave_M8.*" }
+    ]
+    actions = {
+      update-props = {
+        priority.driver  = 500
+        priority.session = 500
+      }
+    }
+  }
+]
+M8WP
+    if [ -s "$_m8wp" ] && command -v systemctl >/dev/null 2>&1; then
+        systemctl restart pipewire pipewire-pulse wireplumber 2>/dev/null
+        for _i in $(seq 1 15); do
+            pgrep -x pipewire >/dev/null 2>&1 && pgrep -x wireplumber >/dev/null 2>&1 && break
+            sleep 1
+        done
+        # Re-elect the output (speaker vs HDMI) after the stack restart —
+        # same pattern as the Norns port.
+        sleep 1
+        command -v hdmi_sense >/dev/null 2>&1 && hdmi_sense >/dev/null 2>&1 || true
+        unset _i
+    fi
+fi
+unset _m8wp
+
 # Seed config on first run: enable USB audio routing (the M8 headless has no
 # audio jack of its own — sound arrives over USB and must be re-played here).
 # Everything else stays at m8c defaults; edit data/.local/share/m8c/config.ini
